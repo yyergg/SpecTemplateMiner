@@ -8,11 +8,7 @@ class AndroidEvent{
 	bool isTail;
 	string description; // something used to connect back to real android event(useless now)
 };
-<<<<<<< HEAD
- 
-=======
 
->>>>>>> 17e2eb1844f40a5b37312a3d80189ad67c2f2501
 class RuleNode{
 	public:
 	string name;
@@ -28,7 +24,3 @@ class Label{
 		eventNum=eNum;
 	}
 };
-<<<<<<< HEAD
-=======
-
->>>>>>> 17e2eb1844f40a5b37312a3d80189ad67c2f2501
