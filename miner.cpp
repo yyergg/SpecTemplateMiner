@@ -21,7 +21,7 @@ void miningTemplate_01(RuleNode* initRule, vector<Label*> &previousLabels)
 	for(i=0;i<previousLabels.size();i++)
 	{
 		if(previousLabels[i]->eventNum < traceSet[previousLabels[i]->traceNum].size()-2) 	// traceset[A->traceNum].size() is the tail of the trace which includes A
-		{ 
+		{
 			//combine the name of the 2 following event as hashkey
 			string combinedName=traceSet[previousLabels[i]->traceNum][previousLabels[i]->eventNum+1]->name  //+1:event 1
 			+"+"+traceSet[previousLabels[i]->traceNum][previousLabels[i]->eventNum+2]->name; // +2:state 2
