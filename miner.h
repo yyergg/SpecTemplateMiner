@@ -1,6 +1,6 @@
 #define STATE_NODE 0
 #define VIEW_NODE 1
-
+ 
 class AndroidEvent{
 	public:
 	int type; //state or view
