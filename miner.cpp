@@ -442,7 +442,7 @@ int main(int argc,char** argv)
 		newRuleNode05->name=it->first;		
 		miningTemplate_05(newRuleNode05,currentLabel);
 		initRuleNode05->children.push_back(newRuleNode05);		
-	} 
+	}   
 	*/
 	system("pause");
 	return 0;
