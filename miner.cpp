@@ -27,16 +27,13 @@ void miningTemplate_01(RuleNode* initRule, vector<Label*> &previousLabels)
 			//combine the name of the 2 following event as hashkey
 			string combinedName=traceSet[previousLabels[i]->traceNum][previousLabels[i]->eventNum+1]->name  //+1:event 1
 			+"+"+traceSet[previousLabels[i]->traceNum][previousLabels[i]->eventNum+2]->name; // +2:state 2
-			cout <<"pre: "<<allNextEvents[combinedName]<<endl;
 			if(allNextEvents.find(combinedName)!=allNextEvents.end())			
 			{
 				allNextEvents[combinedName]++;
-				cout<<"do ++"<<endl;
-			}
+			} 
 			else
 			{
 				allNextEvents[combinedName]=1;
-				cout<<"do =1"<<endl;
 			}
 			cout <<"after: "<<allNextEvents[combinedName]<<endl;
 		}
@@ -101,17 +98,20 @@ void miningTemplate_02(RuleNode* initRule, vector<Label*> &previousLabels)
 		{
 			//stored nextViewName as hashkey
 			string nextViewName=traceSet[previousLabels[i]->traceNum][previousLabels[i]->eventNum+1]->name;
-			
+			cout<<"before_possibleViews[nextViewName]: "<<possibleViews[nextViewName]<<endl;
 			if(possibleViews.find(nextViewName)!=possibleViews.end())
 			{
+				cout<<"do ++"<<endl;
 				possibleViews[nextViewName]++;
 			}
 			else
 			{
+				cout<<"do =1"<<endl;
 				possibleViews[nextViewName]=1;
 			}
-			cout<<possibleViews[nextViewName]<<"view"<<endl;
+			cout<<"after_possibleViews[nextViewName]: "<<possibleViews[nextViewName]<<endl;
 		}
+	}
 			// ABABCDE
 			//						A			C			E
 			//(0,0)(0,1)			1			1			1
@@ -199,7 +199,7 @@ void miningTemplate_02(RuleNode* initRule, vector<Label*> &previousLabels)
 				miningTemplate_02(newStateRuleNode,nextLabels);
 			}
 		}
-	}	
+		
 }
 
 
@@ -358,15 +358,16 @@ int main(int argc,char** argv)
 		RuleNode* newRuleNode=new RuleNode;
 		newRuleNode->name=it->first;			
 		miningTemplate_01(newRuleNode,currentLabel);
+		cout<<"aaaadone"<<endl;
 		initRuleNode->children.push_back(newRuleNode);		
 	}
-	
 	// template02
 	RuleNode* initRuleNode02=new RuleNode;
 	initRuleNode02->name="init02";
 	for(it=allStateEvents.begin();it!=allStateEvents.end();it++)
 	{
 		//init labels
+
 		vector<Label*> currentLabel;
 		for(j=0;j<traceSet.size();j++)
 		{
