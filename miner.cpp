@@ -32,7 +32,7 @@ void miningTemplate_01(RuleNode* initRule, vector<Label*> &previousLabels)
 			{
 				allNextEvents[combinedName]++;
 				cout<<"do ++"<<endl;
-			}
+			} 
 			else
 			{
 				allNextEvents[combinedName]=1;
