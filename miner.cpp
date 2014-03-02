@@ -22,18 +22,23 @@ void miningTemplate_01(RuleNode* initRule, vector<Label*> &previousLabels)
 	{
 		if(previousLabels[i]->eventNum < traceSet[previousLabels[i]->traceNum].size()-2) 	// traceset[A->traceNum].size() is the tail of the trace which includes A
 		{
+			//cout<<"prevoiousLabel.size: "<<previousLabels.size()<<endl;  //size of state event
+			//cout<<"previousLabels[i]->traceNum,eventNum: "<<previousLabels[i]->traceNum<<","<<previousLabels[i]->eventNum<<endl;  // coordinate of state event in traceSet
 			//combine the name of the 2 following event as hashkey
 			string combinedName=traceSet[previousLabels[i]->traceNum][previousLabels[i]->eventNum+1]->name  //+1:event 1
 			+"+"+traceSet[previousLabels[i]->traceNum][previousLabels[i]->eventNum+2]->name; // +2:state 2
+			cout <<"pre: "<<allNextEvents[combinedName]<<endl;
 			if(allNextEvents.find(combinedName)!=allNextEvents.end())			
 			{
-				allNextEvents[combinedName]++;		
+				allNextEvents[combinedName]++;
+				cout<<"do ++"<<endl;
 			}
 			else
 			{
 				allNextEvents[combinedName]=1;
+				cout<<"do =1"<<endl;
 			}
-			cout << allNextEvents[combinedName]<<endl;
+			cout <<"after: "<<allNextEvents[combinedName]<<endl;
 		}
 	}
 	//calculate confidence and recursive
@@ -247,15 +252,15 @@ void setupAllStateEventsAndAllViewEvents()
 	{
 		for(j=0;j<traceSet[i].size();j++)
 		{
-		    //cout<<traceSet[i][j]->type<<traceSet[i][j]->name<<endl;
+		    cout<<traceSet[i][j]->type<<traceSet[i][j]->name<<endl;
 			//cout<<(allStateEvents.find(traceSet[i][j]->name)!=allStateEvents.end())<<endl;
 			if(traceSet[i][j]->type==STATE_NODE)
 			{
-				allStateEvents[traceSet[i][j]->name]=0;
+				allStateEvents[traceSet[i][j]->name]=0;  // still useless so we set it = 0
 			}
-			else if(traceSet[i][j]->type==VIEW_NODE)
+			else if(traceSet[i][j]->type==VIEW_NODE)  
 			{
-				allViewEvents[traceSet[i][j]->name]=0;
+				allViewEvents[traceSet[i][j]->name]=0;   // still useless so we set it = 0
 			}
 			else
 			{
@@ -292,7 +297,7 @@ void readInTraceSet()
 	newTrace.push_back(newEventC); //State C
 	newTrace.push_back(newEventD); //View  D
 	newTrace.push_back(newEventE); //State E
-	traceSet.push_back(newTrace);  //trace 1 ABABCDE done 
+	traceSet.push_back(newTrace);  //trace 1 ABABCDE done
 	
 	vector<AndroidEvent*> newTrace01;
 	newTrace01.push_back(newEventA); //State A
@@ -309,6 +314,16 @@ void readInTraceSet()
 	newTrace02.push_back(newEventD); //View  D	
 	newTrace02.push_back(newEventE); //State E
 	traceSet.push_back(newTrace02); //trace 3 ABCDE done
+	
+	vector<AndroidEvent*> newTrace03;
+	newTrace03.push_back(newEventA); //State A
+	newTrace03.push_back(newEventB); //View  B
+	newTrace03.push_back(newEventC); //State C
+	newTrace03.push_back(newEventD); //View  D	
+	newTrace03.push_back(newEventA); //State A
+	newTrace03.push_back(newEventD); //View  D
+	newTrace03.push_back(newEventE); //State E
+	traceSet.push_back(newTrace03); //trace 4 ABCDADE done
 	//todo
 	//read in trace set by parser
 }
@@ -321,10 +336,12 @@ int main(int argc,char** argv)
 	RuleNode* initRuleNode=new RuleNode;
 	initRuleNode->name="init";
 	map<string,int>::iterator it;
-	//cout<<allStateEvents.size()<<endl;
+	//cout<<"allStateEvents.size: "<<allStateEvents.size()<<endl;
+	//cout<<"allViewEvents.size: "<<allViewEvents.size()<<endl;
 	for(it=allStateEvents.begin();it!=allStateEvents.end();it++)
 	{
 		//init labels
+		cout<<"aaa"<<endl;
 		vector<Label*> currentLabel;
 		for(j=0;j<traceSet.size();j++)
 		{
@@ -444,6 +461,6 @@ int main(int argc,char** argv)
 		initRuleNode05->children.push_back(newRuleNode05);		
 	}   
 	*/
-	system("pause");
+	
 	return 0;
 }
