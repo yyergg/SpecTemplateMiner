@@ -7,7 +7,7 @@
 using namespace::std;
 #include "miner.h"
 
-
+aaa
 vector<vector<AndroidEvent*> > traceSet;
 map<string,int> allStateEvents;
 map<string,int> allViewEvents;
@@ -15,6 +15,7 @@ double confidenceThreshold=0.5;
 
 void miningTemplate_01(RuleNode* initRule, vector<Label*> &previousLabels)
 {
+	cout<<"miningTemplate_01"<<endl;
 	int i,j,k;
 	//find all the next event in the trace set and count the appear times
 	map<string,int> allNextEvents;
@@ -22,28 +23,200 @@ void miningTemplate_01(RuleNode* initRule, vector<Label*> &previousLabels)
 	{
 		if(previousLabels[i]->eventNum < traceSet[previousLabels[i]->traceNum].size()-2) 	// traceset[A->traceNum].size() is the tail of the trace which includes A
 		{
-			//cout<<"prevoiousLabel.size: "<<previousLabels.size()<<endl;  //size of state event
-			//cout<<"previousLabels[i]->traceNum,eventNum: "<<previousLabels[i]->traceNum<<","<<previousLabels[i]->eventNum<<endl;  // coordinate of state event in traceSet
-			//combine the name of the 2 following event as hashkey
 			string combinedName=traceSet[previousLabels[i]->traceNum][previousLabels[i]->eventNum+1]->name  //+1:event 1
 			+"+"+traceSet[previousLabels[i]->traceNum][previousLabels[i]->eventNum+2]->name; // +2:state 2
-			cout <<"pre: "<<allNextEvents[combinedName]<<endl;
-			if(allNextEvents.find(combinedName)!=allNextEvents.end())			
-			{
+			if(allNextEvents.count(combinedName)>0){
 				allNextEvents[combinedName]++;
-				cout<<"do ++"<<endl;
 			} 
-			else
-			{
+			else{
 				allNextEvents[combinedName]=1;
-				cout<<"do =1"<<endl;
 			}
-			cout <<"after: "<<allNextEvents[combinedName]<<endl;
+			cout <<"after: "<<combinedName<<" "<<allNextEvents[combinedName]<<endl;
 		}
 	}
 	//calculate confidence and recursive
 	map<string,int>::iterator it;
 	for(it=allNextEvents.begin();it!=allNextEvents.end();it++)
+	{
+		double a=it->second;
+		double b=previousLabels.size();
+		if( a/b >= confidenceThreshold){
+			//seperate the combinedName
+			for(i=0;i < it->first.size();i++){
+				if(it->first[i]=='+'){
+					break;
+				}
+			}
+			string childViewEventName=it->first.substr(0,i);
+			string childStateEventName=it->first.substr(i+1,it->first.size()-i-1);
+			//update labels
+			vector<Label*> nextLabels;
+			for(i=0;i<previousLabels.size();i++)
+			{
+				if(previousLabels[i]->eventNum < traceSet[previousLabels[i]->traceNum].size()-2)
+				{
+					if(traceSet[previousLabels[i]->traceNum][previousLabels[i]->eventNum+1]->name==childViewEventName && 
+					traceSet[previousLabels[i]->traceNum][previousLabels[i]->eventNum+2]->name==childStateEventName)
+					{
+						Label* newLabel=new Label(previousLabels[i]->traceNum,previousLabels[i]->eventNum+2);
+						nextLabels.push_back(newLabel);
+					}					
+				}
+			}
+			//add to children
+			RuleNode* newViewRuleNode=new RuleNode;
+			newViewRuleNode->name=childViewEventName;
+			RuleNode* newStateRuleNode=new RuleNode;
+			newStateRuleNode->name=childStateEventName;
+			initRule->children.push_back(newViewRuleNode);
+			newViewRuleNode->children.push_back(newStateRuleNode);
+			//recursive
+			miningTemplate_01(newStateRuleNode,nextLabels);
+		}
+	}
+}
+
+/*********** Conditional Eventually *************/ 
+/************************************************/ 
+void miningTemplate_02(RuleNode* initRule, vector<Label*> &previousLabels) 
+{
+	cout<<"miningTemplate_02"<<endl;
+	int i,j,k;
+	map<string,int>::iterator it;
+	map<string,int>::iterator it2;
+	map<string,int> possibleViews;
+	vector<Label*> possibleViewsLabel;
+	for(i=0;i<previousLabels.size();i++)
+	{
+		if(previousLabels[i]->eventNum < traceSet[previousLabels[i]->traceNum].size()-2)
+		{
+			if(possibleViews.count(traceSet[previousLabels[i]->traceNum][previousLabels[i]->eventNum+1]->name)>0){
+				possibleViews[traceSet[previousLabels[i]->traceNum][previousLabels[i]->eventNum+1]->name]++;
+			}
+			else{
+				possibleViews[traceSet[previousLabels[i]->traceNum][previousLabels[i]->eventNum+1]->name]=1;
+			}
+			Label* newLabel=new Label(previousLabels[i]->traceNum,previousLabels[i]->eventNum+1);
+			possibleViewsLabel.push_back(newLabel);
+		}
+	}
+			
+	for(it=possibleViews.begin();it!=possibleViews.end();it++){
+		RuleNode* newViewRuleNode=new RuleNode;
+		newViewRuleNode->name=it->first;
+		vector<Label*> currentLabels; 
+		for(i=0;i<possibleViewsLabel.size();i++){
+			if(traceSet[possibleViewsLabel[i]->traceNum][possibleViewsLabel[i]->eventNum]->name==it->first){
+				currentLabels.push_back(possibleViewsLabel[i]);
+			}
+		}
+		//init the table
+		vector< vector<int> > possibleStateTable;
+		possibleStateTable.resize(currentLabels.size());
+		for(i=0;i<currentLabels.size();i++){ 
+			possibleStateTable[i].resize(allStateEvents.size());
+			for(j=0;j<allStateEvents.size();j++){
+				possibleStateTable[i][j]=0;
+			}
+		}
+		//fill the table	
+		for(i=0;i<currentLabels.size();i++){
+			for(j=currentLabels[i]->eventNum+1;j<traceSet[currentLabels[i]->traceNum].size();j++){
+				for(it2=allStateEvents.begin();it2!=allStateEvents.end();it2++){
+					if(traceSet[currentLabels[i]->traceNum][j]->name==it2->first){
+						possibleStateTable[i][distance(allStateEvents.begin(),it2)]=1;
+					}
+				}
+			}
+		}
+		//print the table
+		for(i=0;i<currentLabels.size();i++){
+			for(j=0;j<possibleStateTable[i].size();j++){
+				cout<<possibleStateTable[i][j]<<" ";
+			}
+			cout<<endl;
+		}
+		for(it2=allStateEvents.begin();it2!=allStateEvents.end();it2++){
+			double a=0.0;
+			for(i=0;i<currentLabels.size();i++){
+				if(possibleStateTable[i][distance(allStateEvents.begin(),it2)]==1){
+					a=a+1.0;
+				}
+			}
+			double b=currentLabels.size();
+			
+			if(a/b>=confidenceThreshold){
+				//setup next labels
+				cout<<it2->first<<endl;
+				map<string,int> labelHash;
+				for(i=0;i<currentLabels.size();i++){
+					if(possibleStateTable[i][distance(allStateEvents.begin(),it2)]==1){
+						while(traceSet[currentLabels[i]->traceNum][currentLabels[i]->eventNum]->name!=it2->first){							
+							currentLabels[i]->eventNum=currentLabels[i]->eventNum+1;
+						}
+						string key=currentLabels[i]->traceNum+"+"+currentLabels[i]->eventNum;
+						if(labelHash.count(key)==0){
+							labelHash[key]=1;
+						}
+						else{
+							cout<<"should remove"<<endl;
+							//currentLabels.erase(currentLabels.begin()+i);
+							//i--;
+						}
+					}
+					else{
+						cout<<"should remove"<<endl;
+						//currentLabels.erase(currentLabels.begin()+i);
+						//i--;					
+					}
+				}
+				RuleNode* newStateRuleNode=new RuleNode;
+				newStateRuleNode->name=traceSet[currentLabels[0]->traceNum][currentLabels[0]->eventNum]->name;				
+				//miningTemplate_02(newStateRuleNode, currentLabels);
+				newViewRuleNode->children.push_back(newStateRuleNode);			
+			}
+		}
+		if(newViewRuleNode->children.size()>0){
+			initRule->children.push_back(newViewRuleNode);
+		}
+		cout<<endl;
+	}	
+/*	
+	vector< vector<int> > table;
+	table.resize(possibleViews.size());
+	for(i=0;i<table.size();i++){ 
+		table[i].resize(allStateEvents.size());
+		for(j=0;j<allStateEvents.size();j++){
+			table[i][j]=0;
+		}
+	}
+
+	for(i=0;i<possibleViews.size();i++){
+		for(j=0;j<allStateEvents.size();j++){
+			for(k=0;k<traceSet[possibleViews[i]->traceNum].size();k++){
+				if(traceSet[possibleViews[i]->traceNum][k]->name==possibleViews[i]->name){
+					table[j][k]=1;
+				}
+			}
+		}
+	}*/
+/*
+	//calculate the number of StateEvent
+	int count=0;
+	for(i=0;i<possibleViews.size();i++)	
+	{
+
+		for(j=0;j<allStateEvents.size();j++)
+		{
+			if(table[i][j]=1)
+			{
+				count++;
+			}
+		}
+	}
+	//calculate confidence and recursive
+	map<string,int>::iterator it;
+	for(it=allNextEvents.begin();it!=allNextEvents.end();++it)
 	{
 		double a=it->second;
 		double b=previousLabels.size();
@@ -73,7 +246,7 @@ void miningTemplate_01(RuleNode* initRule, vector<Label*> &previousLabels)
 					}					
 				}
 			}
-			//add to children
+			//add to children 
 			RuleNode* newStateRuleNode=new RuleNode;
 			newStateRuleNode->name=childStateEventName;
 			RuleNode* newViewRuleNode=new RuleNode;
@@ -81,125 +254,9 @@ void miningTemplate_01(RuleNode* initRule, vector<Label*> &previousLabels)
 			initRule->children.push_back(newViewRuleNode);
 			newViewRuleNode->children.push_back(newStateRuleNode);
 			//recursive
-			miningTemplate_01(newStateRuleNode,nextLabels);
+			miningTemplate_02(newStateRuleNode,nextLabels);
 		}
-	}
-}
-
-/*********** Conditional Eventually *************/ 
-/************************************************/ 
-void miningTemplate_02(RuleNode* initRule, vector<Label*> &previousLabels) 
-{
-	int i,j,k;
-	map<string,int>::iterator it;
-	map<string,int>::iterator it1;
-	map<string,int> possibleViews;
-	map<string,int> allNextEvents;
-	for(i=0;i<previousLabels.size();i++)
-	{
-		if(previousLabels[i]->eventNum < traceSet[previousLabels[i]->traceNum].size()-2)
-		{
-			//stored nextViewName as hashkey
-			string nextViewName=traceSet[previousLabels[i]->traceNum][previousLabels[i]->eventNum+1]->name;
-			
-			if(possibleViews.find(nextViewName)!=possibleViews.end())
-			{
-				possibleViews[nextViewName]++;
-			}
-			else
-			{
-				possibleViews[nextViewName]=1;
-			}
-			cout<<possibleViews[nextViewName]<<"view"<<endl;
-		}
-			// ABABCDE
-			//						A			C			E
-			//(0,0)(0,1)			1			1			1
-			//(0,2)(0,3)			0			1			1
-
-			//create a table and fill zero into table
-		vector <vector<int>> table;
-		table.resize(possibleViews.size());
-		for(i=0;i<table.size();i++)
-		{ 
-			table[i].resize(allStateEvents.size());
-			for(j=0;j<allStateEvents.size();j++)
-			{
-				table[i][j]=0;
-			}
-		}
- 
-		for(it=possibleViews.begin();it!=possibleViews.end();it++)			
-		{
-			for(j=0;j<allStateEvents.size();j++)
-			{
-				for(k=0;k<traceSet[j].size();k++)
-				{
-					if(traceSet[j][k]->name==it1->first)
-					{
-						table[j][k]=1;
-					}
-				}
-			}
-		}
-
-		//calculate the number of StateEvent
-		int count=0;
-		for(i=0;i<possibleViews.size();i++)	
-		{
-	
-			for(j=0;j<allStateEvents.size();j++)
-			{
-				if(table[i][j]=1)
-				{
-					count++;
-				}
-			}
-		}
-		//calculate confidence and recursive
-		map<string,int>::iterator it;
-		for(it=allNextEvents.begin();it!=allNextEvents.end();++it)
-		{
-			double a=it->second;
-			double b=previousLabels.size();
-			if( a/b >= confidenceThreshold)
-			{
-				//seperate the combinedName
-				for(i=0;i < it->first.size();i++)
-				{
-					if(it->first[i]=='+')
-					{
-						break;
-					}
-				}
-				string childViewEventName=it->first.substr(0,i);
-				string childStateEventName=it->first.substr(i+1,it->first.size()-i-1);
-				//update labels
-				vector<Label*> nextLabels;
-				for(i=0;i<previousLabels.size();i++)
-				{
-					if(previousLabels[i]->eventNum < traceSet[previousLabels[i]->traceNum].size()-2)
-					{
-						if(traceSet[previousLabels[i]->traceNum][previousLabels[i]->eventNum+1]->name==childViewEventName && 
-						traceSet[previousLabels[i]->traceNum][previousLabels[i]->eventNum+2]->name==childStateEventName)
-						{
-							Label* newLabel=new Label(previousLabels[i]->traceNum,previousLabels[i]->eventNum+2);
-							nextLabels.push_back(newLabel);
-						}					
-					}
-				}
-				//add to children 
-				RuleNode* newStateRuleNode=new RuleNode;
-				newStateRuleNode->name=childStateEventName;
-				RuleNode* newViewRuleNode=new RuleNode;
-				newViewRuleNode->name=childViewEventName;
-				initRule->children.push_back(newViewRuleNode);
-				newViewRuleNode->children.push_back(newStateRuleNode);
-				//recursive
-				miningTemplate_02(newStateRuleNode,nextLabels);
-			}
-		}
-	}	
+	}	*/
 }
 
 
@@ -252,7 +309,7 @@ void setupAllStateEventsAndAllViewEvents()
 	{
 		for(j=0;j<traceSet[i].size();j++)
 		{
-		    cout<<traceSet[i][j]->type<<traceSet[i][j]->name<<endl;
+		    //cout<<traceSet[i][j]->type<<traceSet[i][j]->name<<endl;
 			//cout<<(allStateEvents.find(traceSet[i][j]->name)!=allStateEvents.end())<<endl;
 			if(traceSet[i][j]->type==STATE_NODE)
 			{
@@ -267,6 +324,17 @@ void setupAllStateEventsAndAllViewEvents()
 				//somethingwrong
 			}
 		}
+	}
+}
+
+void printRuleTree(RuleNode* root, int level){
+	int i;
+	for(i=0;i<level;i++){
+		cout<<"           ";
+	}
+	cout<<root->name<<endl;
+	for(i=0;i<root->children.size();i++){
+		printRuleTree(root->children[i],level+1);
 	}
 }
 
@@ -334,14 +402,12 @@ int main(int argc,char** argv)
 	readInTraceSet();
 	setupAllStateEventsAndAllViewEvents();
 	RuleNode* initRuleNode=new RuleNode;
-	initRuleNode->name="init";
+	initRuleNode->name="init01";
 	map<string,int>::iterator it;
-	//cout<<"allStateEvents.size: "<<allStateEvents.size()<<endl;
-	//cout<<"allViewEvents.size: "<<allViewEvents.size()<<endl;
+	// template01
 	for(it=allStateEvents.begin();it!=allStateEvents.end();it++)
 	{
 		//init labels
-		cout<<"aaa"<<endl;
 		vector<Label*> currentLabel;
 		for(j=0;j<traceSet.size();j++)
 		{
@@ -358,8 +424,11 @@ int main(int argc,char** argv)
 		RuleNode* newRuleNode=new RuleNode;
 		newRuleNode->name=it->first;			
 		miningTemplate_01(newRuleNode,currentLabel);
-		initRuleNode->children.push_back(newRuleNode);		
+		if(newRuleNode->children.size()>0){
+			initRuleNode->children.push_back(newRuleNode);
+		}			
 	}
+	printRuleTree(initRuleNode, 0);
 	
 	// template02
 	RuleNode* initRuleNode02=new RuleNode;
