@@ -500,7 +500,7 @@ int main(int argc,char** argv){
 				delete newRuleNode;
 			}			
 		}		
-	}
+	} 
 	printRuleTree(initRuleNode03, 0);
 
 	// template04
@@ -529,7 +529,7 @@ int main(int argc,char** argv){
 			initRuleNode04->children.push_back(newRuleNode);		
 		}
 	}
-	
+	 
 	/*
 		// template05
 	RuleNode* initRuleNode05=new RuleNode;
