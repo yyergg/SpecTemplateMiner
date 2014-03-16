@@ -21,7 +21,11 @@ void miningTemplate_01(RuleNode* initRule, vector<Label*> &previousLabels){
 	map<string,int> allNextEvents;
 	for(i=0;i<previousLabels.size();i++){
 		if(previousLabels[i]->eventNum < traceSet[previousLabels[i]->traceNum].size()-2){
+<<<<<<< HEAD
 			string combinedName=traceSet[previousLabels[i]->traceNum][previousLabels[i]->eventNum+1]->name; 
+=======
+			string combinedName=traceSet[previousLabels[i]->traceNum][previousLabels[i]->eventNum+1]->name;  
+>>>>>>> 9a210ba52642d3825bc68f6b952ed590586847ce
 			if(allNextEvents.count(combinedName)>0){
 				allNextEvents[combinedName]++;
 			} 
@@ -236,9 +240,60 @@ void miningTemplate_03(RuleNode* initRule, vector<Label*> &previousLabels){
 						if(traceSet[currentLabels[i]->traceNum][j]->name==it2->first){
 							possibleStateTable[i][distance(allStateEvents.begin(),it2)]=1;
 						}
+<<<<<<< HEAD
 					}
 				}
 			}
+			//print the table
+			for(i=0;i<currentLabels.size();i++){
+				for(j=0;j<possibleStateTable[i].size();j++){
+					cout<<possibleStateTable[i][j]<<" ";
+				}
+				cout<<endl;
+			}
+			for(it2=allStateEvents.begin();it2!=allStateEvents.end();it2++){
+				double a=0.0;
+				for(i=0;i<currentLabels.size();i++){
+					if(possibleStateTable[i][distance(allStateEvents.begin(),it2)]==1){
+						a=a+1.0;
+					}
+				}
+				double b=currentLabels.size();
+				
+				if(a/b>=confidenceThreshold){
+					//setup next labels
+					vector<Label*> nextLabels;
+					map<string,int> labelHash;
+					for(i=0;i<currentLabels.size();i++){
+						Label* newNextLabel=new Label(currentLabels[i]->traceNum,currentLabels[i]->eventNum);
+						if(possibleStateTable[i][distance(allStateEvents.begin(),it2)]==1){
+							while(traceSet[newNextLabel->traceNum][newNextLabel->eventNum]->name!=it2->first){							
+								newNextLabel->eventNum=newNextLabel->eventNum+1;
+							}
+							stringstream key;
+							key<<newNextLabel->traceNum<<"+"<<newNextLabel->eventNum;
+							if(labelHash.count(key.str())==0){
+								labelHash[key.str()]=1;
+								nextLabels.push_back(newNextLabel);
+							}
+							else{
+								cout<<"(repeat)should be ignored "<<endl;
+							}
+						}
+						else{
+							cout<<"(no next step)should be ignored "<<endl;				
+						}
+=======
+>>>>>>> 9a210ba52642d3825bc68f6b952ed590586847ce
+					}
+					RuleNode* newStateRuleNode=new RuleNode;
+					newStateRuleNode->name=traceSet[nextLabels[0]->traceNum][nextLabels[0]->eventNum]->name;				
+					miningTemplate_03(newStateRuleNode, nextLabels);
+					newViewRuleNode->children.push_back(newStateRuleNode);			
+				}
+			}
+<<<<<<< HEAD
+=======
 			//print the table
 			for(i=0;i<currentLabels.size();i++){
 				for(j=0;j<possibleStateTable[i].size();j++){
@@ -285,6 +340,7 @@ void miningTemplate_03(RuleNode* initRule, vector<Label*> &previousLabels){
 					newViewRuleNode->children.push_back(newStateRuleNode);			
 				}
 			}
+>>>>>>> 9a210ba52642d3825bc68f6b952ed590586847ce
 			if(newViewRuleNode->children.size()>0){
 				initRule->children.push_back(newViewRuleNode);
 			}
@@ -294,6 +350,7 @@ void miningTemplate_03(RuleNode* initRule, vector<Label*> &previousLabels){
 		}
 	}	
 }
+<<<<<<< HEAD
 
 void miningTemplate_04(RuleNode* initRule, vector<Label*> &previousLabels){
 	cout<<"miningTemplate_04"<<endl;
@@ -308,6 +365,9 @@ void miningTemplate_04(RuleNode* initRule, vector<Label*> &previousLabels){
 	}
 
 }
+=======
+	
+>>>>>>> 9a210ba52642d3825bc68f6b952ed590586847ce
 	
 void setupAllStateEventsAndAllViewEvents()
 {
@@ -347,10 +407,17 @@ void printRuleTree(RuleNode* root, int level){
 }
 
 void readInTraceSet(){
+<<<<<<< HEAD
 	//cout<<"trace01: ABABCDEBG"<<endl;
 	//cout<<"trace02: ABCDC"<<endl;
 	//cout<<"trace03: ABCDE"<<endl;
 	//cout<<"trace04: ABCDADE"<<endl<<endl;
+=======
+	//ABABCDE
+	//ABCDC
+	//ABCDE
+	//ABCDADE
+>>>>>>> 9a210ba52642d3825bc68f6b952ed590586847ce
 	
 	AndroidEvent* newEventA=new AndroidEvent;
 	AndroidEvent* newEventB=new AndroidEvent;
@@ -502,8 +569,13 @@ int main(int argc,char** argv){
 		}		
 	}
 	printRuleTree(initRuleNode03, 0);
+<<<<<<< HEAD
 
 	// template04
+=======
+	/*
+		// template04
+>>>>>>> 9a210ba52642d3825bc68f6b952ed590586847ce
 	RuleNode* initRuleNode04=new RuleNode;
 	initRuleNode04->name="init04";
 	for(it=allStateEvents.begin();it!=allStateEvents.end();it++)
