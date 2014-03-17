@@ -5,7 +5,6 @@
 #include<map>
 #include<string>
 #include<sstream>
-#include<cstdlib>
 using namespace::std;
 #include "miner.h"
 
@@ -421,31 +420,74 @@ void miningTemplate_04(RuleNode* initRule, vector<Label*> &previousLabels){
 	}
 }
 	
-void setupAllStateEventsAndAllViewEvents()
-{
+
+void miningTemplate_05(RuleNode* initRule, vector<Label*> &previousLabels){
+	int i,j,k;
+	map<string,int>::iterator it;
+	map<string,int>::iterator it2;
+	double supportCounter;
+	map<string,int> possibleViews;
+	vector<Label*> possibleViewsLabel;
+	for(i=0;i<previousLabels.size();i++){
+		if(previousLabels[i]->eventNum < traceSet[previousLabels[i]->traceNum].size()-2){
+			if(possibleViews.count(traceSet[previousLabels[i]->traceNum][previousLabels[i]->eventNum+1]->name)>0){
+				possibleViews[traceSet[previousLabels[i]->traceNum][previousLabels[i]->eventNum+1]->name]++;
+			}
+			else{
+				possibleViews[traceSet[previousLabels[i]->traceNum][previousLabels[i]->eventNum+1]->name]=1;
+			}
+			Label* newLabel=new Label(previousLabels[i]->traceNum,previousLabels[i]->eventNum+1);
+			possibleViewsLabel.push_back(newLabel);
+		}
+	}	
+	for(it=possibleViews.begin();it!=possibleViews.end();it++){
+		vector<Label*> nextViewLabels;
+		for(i=0;i<previousLabels.size();i++){
+			if(previousLabels[i]->eventNum < traceSet[previousLabels[i]->traceNum].size()-2){
+				if(traceSet[previousLabels[i]->traceNum][previousLabels[i]->eventNum+1]->name==it->first){
+					Label* newViewLable=new Label(previousLabels[i]->traceNum,previousLabels[i]->eventNum+1);
+					nextViewLabels.push_back(newViewLable);
+				}
+			}
+		}		
+		map<string,int> possibleStates;
+		vector<Label*> possibleStatesLabel;
+		for(i=0;i<nextViewLabels.size();i++){
+			if(nextViewLabels[i]->eventNum < traceSet[nextViewLabels[i]->traceNum].size()-2){
+				if(possibleStates.count(traceSet[nextViewLabels[i]->traceNum][nextViewLabels[i]->eventNum+1]->name)>0){
+					possibleStates[traceSet[nextViewLabels[i]->traceNum][nextViewLabels[i]->eventNum+1]->name]++;
+				}
+				else{
+					possibleStates[traceSet[nextViewLabels[i]->traceNum][nextViewLabels[i]->eventNum+1]->name]=1;
+				}
+				Label* newLabel=new Label(nextViewLabels[i]->traceNum,nextViewLabels[i]->eventNum+1);
+				possibleStatesLabel.push_back(newLabel);
+			}
+		}		
+	}
+}
+	
+		
+void setupAllStateEventsAndAllViewEvents(){
 	// cout<<traceSet.size()<<endl;
 	int i,j;
-	for(i=0;i<traceSet.size();i++)
-	{
-		for(j=0;j<traceSet[i].size();j++)
-		{
+	for(i=0;i<traceSet.size();i++){
+		for(j=0;j<traceSet[i].size();j++){
 		    //cout<<traceSet[i][j]->type<<traceSet[i][j]->name<<endl;
 			//cout<<(allStateEvents.find(traceSet[i][j]->name)!=allStateEvents.end())<<endl;
-			if(traceSet[i][j]->type==STATE_NODE)
-			{
+			if(traceSet[i][j]->type==STATE_NODE){
 				allStateEvents[traceSet[i][j]->name]=0;  // still useless so we set it = 0
 			}
-			else if(traceSet[i][j]->type==VIEW_NODE)  
-			{
+			else if(traceSet[i][j]->type==VIEW_NODE)  {
 				allViewEvents[traceSet[i][j]->name]=0;   // still useless so we set it = 0
 			}
-			else
-			{
+			else{
 				//somethingwrong
 			}
 		}
 	}
 }
+
 
 void printRuleTree(RuleNode* root, int level){
 	int i;
@@ -457,6 +499,7 @@ void printRuleTree(RuleNode* root, int level){
 		printRuleTree(root->children[i],level+1);
 	}
 }
+
 
 void readInTraceSet(){
 	//cout<<"trace01: ABABCDEBG"<<endl;
@@ -522,6 +565,7 @@ void readInTraceSet(){
 	//todo
 	//read in trace set by parser
 }
+
 
 int main(int argc,char** argv){
 	int i,j,k;	
@@ -639,20 +683,16 @@ int main(int argc,char** argv){
 		}
 	}
 	printRuleTree(initRuleNode04, 0);	 
-	/*
-		// template05
+	
+	// template05
 	RuleNode* initRuleNode05=new RuleNode;
 	initRuleNode05->name="init05";
-	for(it=allStateEvents.begin();it!=allStateEvents.end();it++)
-	{
+	for(it=allStateEvents.begin();it!=allStateEvents.end();it++){
 		//init labels
 		vector<Label*> currentLabel;
-		for(j=0;j<traceSet.size();j++)
-		{
-			for(k=0;k<traceSet[j].size();k++)
-			{
-				if(traceSet[j][k]->name==it->first)
-				{
+		for(j=0;j<traceSet.size();j++){
+			for(k=0;k<traceSet[j].size();k++){
+				if(traceSet[j][k]->name==it->first){
 					Label* newLabel=new Label(j,k);
 					currentLabel.push_back(newLabel);
 				}
@@ -664,7 +704,7 @@ int main(int argc,char** argv){
 		miningTemplate_05(newRuleNode05,currentLabel);
 		initRuleNode05->children.push_back(newRuleNode05);		
 	}   
-	*/
+	
 //	system("pause");
 	return 0;
 }
