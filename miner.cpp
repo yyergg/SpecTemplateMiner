@@ -463,7 +463,7 @@ void miningTemplate_05(RuleNode* initRule, vector<Label*> &previousLabels){
 				Label* newLabel=new Label(nextViewLabels[i]->traceNum,nextViewLabels[i]->eventNum+1);
 				possibleStatesLabel.push_back(newLabel);
 			}
-		}		
+		}			
 	}
 }
 	
@@ -478,7 +478,7 @@ void setupAllStateEventsAndAllViewEvents(){
 			if(traceSet[i][j]->type==STATE_NODE){
 				allStateEvents[traceSet[i][j]->name]=0;  // still useless so we set it = 0
 			}
-			else if(traceSet[i][j]->type==VIEW_NODE)  {
+			else if(traceSet[i][j]->type==VIEW_NODE){
 				allViewEvents[traceSet[i][j]->name]=0;   // still useless so we set it = 0
 			}
 			else{
