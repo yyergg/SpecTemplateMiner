@@ -420,52 +420,102 @@ void miningTemplate_04(RuleNode* initRule, vector<Label*> &previousLabels){
 	}
 }
 	
-
-void miningTemplate_05(RuleNode* initRule, vector<Label*> &previousLabels){
+void findStarvation(RuleNode* initRule, vector<Label*> &previousLabels){
 	int i,j,k;
 	map<string,int>::iterator it;
-	map<string,int>::iterator it2;
-	double supportCounter;
-	map<string,int> possibleViews;
-	vector<Label*> possibleViewsLabel;
-	for(i=0;i<previousLabels.size();i++){
-		if(previousLabels[i]->eventNum < traceSet[previousLabels[i]->traceNum].size()-2){
-			if(possibleViews.count(traceSet[previousLabels[i]->traceNum][previousLabels[i]->eventNum+1]->name)>0){
-				possibleViews[traceSet[previousLabels[i]->traceNum][previousLabels[i]->eventNum+1]->name]++;
-			}
-			else{
-				possibleViews[traceSet[previousLabels[i]->traceNum][previousLabels[i]->eventNum+1]->name]=1;
-			}
-			Label* newLabel=new Label(previousLabels[i]->traceNum,previousLabels[i]->eventNum+1);
-			possibleViewsLabel.push_back(newLabel);
+	vector< vector<int> > possibleStateTable;
+	possibleStateTable.resize(previousLabels.size());
+	for(i=0;i<previousLabels.size();i++){ 
+		possibleStateTable[i].resize(allStateEvents.size());
+		for(j=0;j<allStateEvents.size();j++){
+			possibleStateTable[i][j]=0;
 		}
-	}	
-	for(it=possibleViews.begin();it!=possibleViews.end();it++){
-		vector<Label*> nextViewLabels;
+	}
+	//fill the table	
+	for(i=0;i<previousLabels.size();i++){
+		for(j=previousLabels[i]->eventNum+1;j<traceSet[previousLabels[i]->traceNum].size();j++){
+			for(it=allStateEvents.begin();it!=allStateEvents.end();it++){
+				if(traceSet[previousLabels[i]->traceNum][j]->name==it->first){
+					possibleStateTable[i][distance(allStateEvents.begin(),it)]=1;
+				}
+			}
+		}
+	}
+	//print the table
+	for(i=0;i<previousLabels.size();i++){
+		for(j=0;j<possibleStateTable[i].size();j++){
+			cout<<possibleStateTable[i][j]<<" ";
+		}
+		cout<<endl;
+	}
+	for(it=allStateEvents.begin();it!=allStateEvents.end();it++){
+		double a=0.0;
+		double b=previousLabels.size();
 		for(i=0;i<previousLabels.size();i++){
-			if(previousLabels[i]->eventNum < traceSet[previousLabels[i]->traceNum].size()-2){
-				if(traceSet[previousLabels[i]->traceNum][previousLabels[i]->eventNum+1]->name==it->first){
-					Label* newViewLable=new Label(previousLabels[i]->traceNum,previousLabels[i]->eventNum+1);
-					nextViewLabels.push_back(newViewLable);
-				}
-			}
-		}		
-		map<string,int> possibleStates;
-		vector<Label*> possibleStatesLabel;
-		for(i=0;i<nextViewLabels.size();i++){
-			if(nextViewLabels[i]->eventNum < traceSet[nextViewLabels[i]->traceNum].size()-2){
-				if(possibleStates.count(traceSet[nextViewLabels[i]->traceNum][nextViewLabels[i]->eventNum+1]->name)>0){
-					possibleStates[traceSet[nextViewLabels[i]->traceNum][nextViewLabels[i]->eventNum+1]->name]++;
-				}
-				else{
-					possibleStates[traceSet[nextViewLabels[i]->traceNum][nextViewLabels[i]->eventNum+1]->name]=1;
-				}
-				Label* newLabel=new Label(nextViewLabels[i]->traceNum,nextViewLabels[i]->eventNum+1);
-				possibleStatesLabel.push_back(newLabel);
-			}
-		}			
+			if(possibleStateTable[i][distance(allStateEvents.begin(),it)]==0){
+				a=a+1.0;
+			}			
+		}
+		if(a/b>=confidenceThreshold){
+			RuleNode* newRuleNode=new RuleNode;
+			newRuleNode->name="!"+it->first;
+			initRule->children.push_back(newRuleNode);			
+		}
 	}
 }
+	
+void miningTemplate_05(RuleNode* initRule, vector<Label*> &previousLabels){
+	cout<<"miningTemplate_05 "<<initRule->name<<endl;
+	int i,j,k;
+	map<string,int>::iterator it;
+	map<string,int> possibleNexts;
+	vector<Label*> possibleNextLabels;
+	for(i=0;i<previousLabels.size();i++){
+		if(previousLabels[i]->eventNum < traceSet[previousLabels[i]->traceNum].size()-2){
+			if(possibleNexts.count(traceSet[previousLabels[i]->traceNum][previousLabels[i]->eventNum+1]->name)>0){
+				possibleNexts[traceSet[previousLabels[i]->traceNum][previousLabels[i]->eventNum+1]->name]++;
+			}
+			else{
+				possibleNexts[traceSet[previousLabels[i]->traceNum][previousLabels[i]->eventNum+1]->name]=1;
+			}
+			Label* newLabel=new Label(previousLabels[i]->traceNum,previousLabels[i]->eventNum+1);
+			possibleNextLabels.push_back(newLabel);
+		}
+	}
+	for(it=possibleNexts.begin();it!=possibleNexts.end();it++){
+		double supportCounter;
+		vector<bool> supportArray;
+		vector<Label*> nextLabels;
+		supportArray.resize(traceSet.size());
+		for(i=0;i<supportArray.size();i++){
+			supportArray[i]=false;
+		}
+		for(i=0;i<possibleNextLabels.size();i++){
+			if(traceSet[possibleNextLabels[i]->traceNum][possibleNextLabels[i]->eventNum]->name==it->first){
+				supportArray[possibleNextLabels[i]->traceNum]=true;
+				nextLabels.push_back(possibleNextLabels[i]);
+			}
+		}
+		for(i=0;i<supportArray.size();i++){
+			if(supportArray[i]==true){
+				supportCounter=supportCounter+1.0;
+			}
+		}
+		double traceNum;
+		traceNum=traceSet.size();
+		if(supportCounter/traceNum>supportThreshold){
+			RuleNode* newRuleNode=new RuleNode;
+			newRuleNode->name=it->first;
+			miningTemplate_05(newRuleNode, nextLabels);
+			initRule->children.push_back(newRuleNode);
+			if(newRuleNode->children.size()==0){
+				findStarvation(newRuleNode,nextLabels);
+			}
+		}
+	}
+}
+
+
 	
 		
 void setupAllStateEventsAndAllViewEvents(){
@@ -699,12 +749,14 @@ int main(int argc,char** argv){
 			}
 		}
 		//start mining
-		RuleNode* newRuleNode05=new RuleNode;
-		newRuleNode05->name=it->first;		
-		miningTemplate_05(newRuleNode05,currentLabel);
-		initRuleNode05->children.push_back(newRuleNode05);		
+		RuleNode* newRuleNode=new RuleNode;
+		newRuleNode->name=it->first;		
+		miningTemplate_05(newRuleNode,currentLabel);
+		if(newRuleNode->children.size()>0){		
+			initRuleNode05->children.push_back(newRuleNode);	
+		}			
 	}   
-	
+	printRuleTree(initRuleNode05, 0);	
 //	system("pause");
 	return 0;
 }
