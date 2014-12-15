@@ -21,7 +21,7 @@ void labelTree(RuleNode* posRule){
     int i,j;
     for(i=0;i<posRule->children.size();i++){
         for(j=0;j<posRule->mappedTo->children.size();j++){
-            if(i<posRule->children[i]->name.compare(posRule->mappedTo->children[j]->name) == 0){
+            if(posRule->children[i]->name.compare(posRule->mappedTo->children[j]->name) == 0){
                 posRule->children[i]->mappedTo = posRule->mappedTo->children[j];
                 posRule->mappedTo->children[j]->labeled = true;
                 labelTree(posRule->children[i]);
@@ -33,13 +33,16 @@ void labelTree(RuleNode* posRule){
 
 
 bool checkRemovable(RuleNode* negRule){
+    cout<<"checking "<<negRule->name<<endl;
     int i;
     for(i=0;i<negRule->children.size();i++){
         if(checkRemovable(negRule->children[i])){
             negRule->children.erase(negRule->children.begin()+i);
+            i--;
         }
     }
     if(negRule->children.size() == 0 && negRule->labeled == true){
+        cout<<"remove:"<<negRule->name<<endl;
         return true;
     }
     return false;
@@ -752,7 +755,7 @@ int main(int argc,char** argv){
         }            
     }   
     printRuleTree(initRuleNode05, 0);
-
+    printRuleTree(initRuleNode, 0); 
     printRuleTree(initRuleNode02, 0);   
     removeTree(initRuleNode,initRuleNode02);
     printRuleTree(initRuleNode02, 0);
