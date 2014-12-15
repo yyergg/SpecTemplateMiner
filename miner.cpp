@@ -11,8 +11,8 @@ using namespace::std;
 vector<vector<AndroidEvent*> > traceSet;
 map<string,int> allStateEvents;
 map<string,int> allViewEvents;
-double confidenceThreshold=0.5;
-double supportThreshold=0.7;
+double confidenceThreshold=0.9;
+double supportThreshold=0.9;
 
 void miningTemplate_01(RuleNode* initRule, vector<Label*> &previousLabels){
 	//cout<<"miningTemplate_01"<<endl;
@@ -483,7 +483,7 @@ void miningTemplate_05(RuleNode* initRule, vector<Label*> &previousLabels){
 		}
 	}
 	for(it=possibleNexts.begin();it!=possibleNexts.end();it++){
-		double supportCounter;
+		double supportCounter = 0;
 		vector<bool> supportArray;
 		vector<Label*> nextLabels;
 		supportArray.resize(traceSet.size());
@@ -542,7 +542,7 @@ void setupAllStateEventsAndAllViewEvents(){
 void printRuleTree(RuleNode* root, int level){
 	int i;
 	for(i=0;i<level;i++){
-		cout<<"           ";
+		cout<<"             ";
 	}
 	cout<<root->name<<endl;
 	for(i=0;i<root->children.size();i++){
@@ -551,75 +551,32 @@ void printRuleTree(RuleNode* root, int level){
 }
 
 
-void readInTraceSet(){
-	//cout<<"trace01: ABABCDEBG"<<endl;
-	//cout<<"trace02: ABCDC"<<endl;
-	//cout<<"trace03: ABCDE"<<endl;
-	//cout<<"trace04: ABCDADE"<<endl<<endl;
-	
-	AndroidEvent* newEventA=new AndroidEvent;
-	AndroidEvent* newEventB=new AndroidEvent;
-	AndroidEvent* newEventC=new AndroidEvent;
-	AndroidEvent* newEventD=new AndroidEvent;
-	AndroidEvent* newEventE=new AndroidEvent;
-	AndroidEvent* newEventG=new AndroidEvent;
-	newEventA->type=0; //State A
-	newEventA->name="A";
-	newEventB->type=1; //View B
-	newEventB->name="B";
-	newEventC->type=0; //State C
-	newEventC->name="C";
-	newEventD->type=1; //View D
-	newEventD->name="D";
-	newEventE->type=0; //State E
-	newEventE->name="E";
-	newEventG->name="G";
-	
-	vector<AndroidEvent*> newTrace; //trace 1 ABABCDEBG Start
-	newTrace.push_back(newEventA); //State A
-	newTrace.push_back(newEventB); //View  B
-	newTrace.push_back(newEventA); //State A
-	newTrace.push_back(newEventB); //View  B
-	newTrace.push_back(newEventC); //State C
-	newTrace.push_back(newEventD); //View  D
-	newTrace.push_back(newEventE); //State E
-	newTrace.push_back(newEventB); //View  B
-	newTrace.push_back(newEventG); //State G
-	traceSet.push_back(newTrace);  //trace 1 ABABCDE done
-	
-	vector<AndroidEvent*> newTrace01;
-	newTrace01.push_back(newEventA); //State A
-	newTrace01.push_back(newEventB); //View B
-	newTrace01.push_back(newEventC); //State C
-	newTrace01.push_back(newEventD); //View D
-	newTrace01.push_back(newEventC); //State C
-	traceSet.push_back(newTrace01);//trace 2 ABCDC done 
-	
-	vector<AndroidEvent*> newTrace02;
-	newTrace02.push_back(newEventA); //State A
-	newTrace02.push_back(newEventB); //View  B
-	newTrace02.push_back(newEventC); //State C
-	newTrace02.push_back(newEventD); //View  D	
-	newTrace02.push_back(newEventE); //State E
-	traceSet.push_back(newTrace02); //trace 3 ABCDE done
-	
-	vector<AndroidEvent*> newTrace03;
-	newTrace03.push_back(newEventA); //State A
-	newTrace03.push_back(newEventB); //View  B
-	newTrace03.push_back(newEventC); //State C
-	newTrace03.push_back(newEventD); //View  D	
-	newTrace03.push_back(newEventA); //State A
-	newTrace03.push_back(newEventD); //View  D
-	newTrace03.push_back(newEventE); //State E
-	traceSet.push_back(newTrace03); //trace 4 ABCDADE done
-	//todo
-	//read in trace set by parser
+void readInTraceSet(char* inFilename){
+	fstream infile;
+	infile.open(inFilename, ios::in);
+	string tempStr;
+	infile >> tempStr;
+	while (!infile.eof()){
+		vector<AndroidEvent*> newTrace;
+		while (tempStr != "pass" && tempStr != "fail"){
+			AndroidEvent* newEvent = new AndroidEvent();
+			std::size_t found = tempStr.find('_');
+			if (found == std::string::npos){ newEvent->type = 0; }
+			else{ newEvent->type = 1; }
+			newEvent->name = tempStr;
+			newTrace.push_back(newEvent);
+			infile >> tempStr;
+		}
+		traceSet.push_back(newTrace);
+		infile >> tempStr;
+	}
+	infile.close();
 }
 
 
 int main(int argc,char** argv){
 	int i,j,k;	
-	readInTraceSet();
+	readInTraceSet(argv[1]);
 	setupAllStateEventsAndAllViewEvents();
 	RuleNode* initRuleNode=new RuleNode;
 	initRuleNode->name="init01";
@@ -757,6 +714,7 @@ int main(int argc,char** argv){
 		}			
 	}   
 	printRuleTree(initRuleNode05, 0);	
-//	system("pause");
+	
+	system("pause");
 	return 0;
 }

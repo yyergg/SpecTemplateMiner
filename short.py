@@ -30,9 +30,10 @@ def getViews(root):
     return returnList
 
 
-def ripping(root, tracefilename):
+def ripping(root, tracefilename, stateIndex):
     viewList = getViews(root)
     coordinateList = []
+    indexs=[]
     for view in viewList:
         if view.attrib["clickable"] == "true":
             print(view.attrib["text"], view.attrib["bounds"])
@@ -46,22 +47,38 @@ def ripping(root, tracefilename):
                 view.attrib["bounds"].replace("[", "").split("]")[1].split(",")[1])
             coordinateList.append(
                 (((leftBound + rightBound) / 2, (topBound + bottomBound) / 2), view))
+            indexs.append(view.attrib["index"])
     target = random.randint(0, len(coordinateList) - 1)
-    print(tracefilename)
     f = codecs.open(tracefilename, 'a', "utf-8")
-    f.write("CLICK:" + str(list(view.attrib)) + "\n")
+    f.write("CLICK:" + indexs[target] + "\n")
+    f.close()
+    f = codecs.open("traces", 'a', "utf-8")
+    f.write(" "+stateIndex+ "_" + indexs[target])
     f.close()
     os.system("adb shell input tap " +
               str(coordinateList[target][0][0]) + " " + str(coordinateList[target][0][1]))
-    time.sleep(3)
+    time.sleep(1)
+
+
+def findMatchState():
+    global counterActivity
+    for root, dirnames, filenames in os.walk("Activities"):
+        for filename in filenames:
+            if(not compareXML(os.path.join(root, filename), "aaa.xml")):
+                return os.path.join(os.path.dirname(__file__), "Activities/" + filename) + "(match)"
+    newfile = os.path.join(
+        os.path.dirname(__file__), "Activities/state_" + str(counterActivity) + ".xml")
+    shutil.copyfile("aaa.xml", newfile)
+    counterActivity = counterActivity + 1
+    return newfile + "(new)"
 
 
 def generateTrace(traceLength, packageName, tracefilename):
     global counterActivity
+
     i = 0
-    
+
     while i < traceLength:
-        print("counterActivity", counterActivity)
         # read in old log
         os.system("adb logcat -d AndroidRuntime:E " +
                   packageName + ":D *:S > templog.txt")
@@ -71,9 +88,18 @@ def generateTrace(traceLength, packageName, tracefilename):
 
         os.system("adb shell /system/bin/uiautomator dump /data/aaa.xml")
         os.system("adb pull /data/aaa.xml ")
+        if i == 0:
+            statename = findMatchState()
+            tracefile = open(tracefilename, 'w')
+            tracefile.write(statename + "\n")
+            tracefile.close()
+            tracefiles = codecs.open("traces", 'a', "utf-8")
+            tracefiles.write("\n" + statename.split("_")[-1].split("(")[0].replace(".xml", ""))
+            tracefiles.close()
+
         tree = ET.parse('aaa.xml')
         root = tree.getroot()
-        ripping(root, tracefilename)
+        ripping(root, tracefilename, statename.split("_")[-1].split("(")[0].replace(".xml", ""))
 
         # read in new log
         os.system("adb logcat -d AndroidRuntime:E " +
@@ -83,43 +109,30 @@ def generateTrace(traceLength, packageName, tracefilename):
         logfile.close()
 
         if form2.replace(form, "") != "":
+            tracefile = open(tracefilename, 'a')
             tracefile.write("Error" + form2 + "\n")
             tracefile.close()
+            tracefiles = codecs.open("traces", 'a', "utf-8")
+            tracefiles.write(" fail")
+            tracefiles.close()
             return 0
         else:
-            if not os.path.isdir("Activities"):
-                os.mkdir("Activities")
-            if counterActivity == 0:
-                tracefile = open(tracefilename, 'a')
-                tracefile.write(os.path.join(os.path.dirname(
-                    __file__), "Activities/state_" + str(counterActivity) + ".xml") + "\n")
-                tracefile.close()
-                shutil.move(
-                    "aaa.xml", os.path.join(os.path.dirname(__file__), "Activities/state_" + str(counterActivity) + ".xml"))
-                counterActivity = counterActivity + 1
-            else:
-                newActivity = True
-                for root, dirnames, filenames in os.walk("Activities"):
-                    for filename in filenames:
-                        if(not compareXML(os.path.join(root, filename), "aaa.xml")):
-                            tracefile = open(tracefilename, 'a')
-                            tracefile.write(
-                                os.path.join(root, filename) + "aaa\n")
-                            tracefile.close()
-                            newActivity = False
-                            break
-                if newActivity:
-                    tracefile = open(tracefilename, 'a')
-                    tracefile.write(os.path.join(os.path.dirname(
-                        __file__), "Activities/state_" + str(counterActivity) + ".xml") + "\n")
-                    tracefile.close()
-                    shutil.move(
-                        "aaa.xml", os.path.join(os.path.dirname(__file__), "Activities/state_" + str(counterActivity) + ".xml"))
-                    counterActivity = counterActivity + 1
+            os.system("adb shell /system/bin/uiautomator dump /data/aaa.xml")
+            os.system("adb pull /data/aaa.xml ")
+            statename = findMatchState()
+            tracefile = open(tracefilename, 'a')
+            tracefile.write(statename + "\n")
+            tracefile.close()
+            tracefiles = codecs.open("traces", 'a', "utf-8")
+            tracefiles.write(" " + statename.split("_")[-1].split("(")[0].replace(".xml", ""))
+            tracefiles.close()
         i = i + 1
     tracefile = open(tracefilename, 'a')
     tracefile.write("error free!!")
     tracefile.close()
+    tracefiles = codecs.open("traces", 'a', "utf-8")
+    tracefiles.write(" pass")
+    tracefiles.close()
 
 
 def main():
@@ -131,10 +144,12 @@ def main():
     os.system("adb shell am start " + packageName + "/" + activityName)
     counterActivity = 0
     i = 0
-    while i < 1:
+    if not os.path.isdir("Activities"):
+        os.mkdir("Activities")
+    while i < 20:
         os.system("adb shell am force-stop " + packageName)
         os.system("adb shell am start " + packageName + "/" + activityName)
-        generateTrace(4, packageName, "trace" + str(i) + ".txt")
+        generateTrace(20, packageName, "trace" + str(i) + ".txt")
         i = i + 1
 
 
