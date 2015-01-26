@@ -580,6 +580,23 @@ void setupAllStateEventsAndAllViewEvents(){
 }
 
 
+void treeToMatrix(RuleNode* root, vector<RuleNode*> &stack, vector< vector<RuleNode*> > &result){
+    stack.push_back(root);
+    if(root->children.size()==0){
+        vector<RuleNode*> newRule=stack;
+        result.push_back(newRule);
+    }
+    else{
+        int i=0;
+        for(i=0;i<root->children.size();i++){
+            treeToMatrix(root->children[i],stack,result);
+        }
+    }
+    stack.pop_back();
+}
+
+
+
 void printRuleTree(RuleNode* root, int level){
     int i;
     for(i=0;i<level;i++){
@@ -613,6 +630,131 @@ void readInTraceSet(char* inFilename){
     }
     infile.close();
 }
+
+bool ruleChecker01(vector<AndroidEvent*> trace, vector<RuleNode*>rule){
+    int i,j,k;
+    for(i=0;i<trace.size();i++){
+        if(trace[i]->name.compare(rule[1]->name)==0){
+            bool sat=true;
+            for(j=2;j<rule.size();j++){
+                if(i+j-1>=trace.size()){
+                    sat = false;
+                    break;
+                }
+                if(trace[i+j-1]->name.compare(rule[j]->name)!=0){
+                    sat=false;
+                    break;
+                }
+            }
+            if(sat){
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+bool ruleChecker02(vector<AndroidEvent*> trace, vector<RuleNode*>rule){
+    int i,j,k;
+    int lastPos=0;
+    i=1;
+    while (i < rule.size()-1){
+        bool stepSat=false;
+        cout<<"searching for "<<rule[i]->name<<" and "<<rule[i+1]->name<<endl;
+        for(j=lastPos;j<trace.size()-1;j++){
+            if(trace[j]->name.compare(rule[i]->name)==0 && trace[j+1]->name.compare(rule[i+1]->name)==0){
+                stepSat=true;
+                lastPos=j+2;
+                i=i+2;
+                cout<<"found at "<<j<<endl;
+                break;
+            }
+        }
+        if(!stepSat){
+            return true;
+        }
+    }
+    cout<<"searching for "<<rule[rule.size()-1]->name<<endl;
+    for(i=lastPos;i<trace.size();i++){
+        if(trace[i]->name.compare(rule[rule.size()-1]->name)==0){
+            return true;
+        }
+    }
+    return false;
+}
+
+
+bool ruleChecker03(vector<AndroidEvent*> trace, vector<RuleNode*>rule){
+    int i,j,k;
+    int lastPos=0;
+    i=1;
+    while (i < rule.size()-1){
+        bool stepSat=false;
+        cout<<"searching for "<<rule[i]->name<<" and "<<rule[i+1]->name<<endl;
+        for(j=lastPos;j<trace.size()-1;j++){
+            if(trace[j]->name.compare(rule[i]->name)==0 && trace[j+1]->name.compare(rule[i+1]->name)==0){
+                stepSat=true;
+                lastPos=j+2;
+                i=i+2;
+                cout<<"found at "<<j<<endl;
+                break;
+            }
+        }
+        if(!stepSat){
+            return false;
+        }
+    }
+    cout<<"searching for "<<rule[rule.size()-1]->name<<endl;
+    for(i=lastPos;i<trace.size();i++){
+        if(trace[i]->name.compare(rule[rule.size()-1]->name)==0){
+            return true;
+        }
+    }
+    return false;
+}
+
+bool ruleChecker04(vector<AndroidEvent*> trace, vector<RuleNode*>rule){
+    int i,j,k;
+    int pos=-1;
+    cout<<"searching for "<<rule[1]->name<<" and "<<rule[2]->name<<endl;
+    for(i=0;i<trace.size()-1;i++){
+        if(trace[i]->name.compare(rule[1]->name)==0 && trace[i+1]->name.compare(rule[2]->name)==0){
+            pos=i;
+            break;
+        }
+    }
+    if(pos == -1){
+        pos = trace.size();
+    }
+    for(i=0;i<pos;i++){
+        if(trace[i]->name.compare(rule[3]->name)==0){
+            return false;
+        }
+    }
+    return true;
+}
+
+bool ruleChecker05(vector<AndroidEvent*> trace, vector<RuleNode*>rule){
+    int i,j,k;
+    int pos=-1;
+    cout<<"searching for "<<rule[1]->name<<" and "<<rule[2]->name<<endl;
+    for(i=0;i<trace.size()-1;i++){
+        if(trace[i]->name.compare(rule[1]->name)==0 && trace[i+1]->name.compare(rule[2]->name)==0){
+            pos=i;
+            break;
+        }
+    }
+    if(pos == -1){
+        false;
+    }
+    for(i=pos+2;i<trace.size();i++){
+        if(trace[i]->name.compare(rule[3]->name)==0){
+            return false;
+        }
+    }
+    return true;
+}
+
 
 
 int main(int argc,char** argv){
@@ -759,5 +901,30 @@ int main(int argc,char** argv){
     printRuleTree(initRuleNode02, 0);   
     removeTree(initRuleNode,initRuleNode02);
     printRuleTree(initRuleNode02, 0);
+    vector<RuleNode*> stack;
+    vector< vector<RuleNode*> > result;
+    treeToMatrix(initRuleNode,stack,result);
+    for(i=0;i<result.size();i++){
+        for(j=0;j<result[i].size();j++){
+            cout<<result[i][j]->name<<" ";
+        }
+        cout<<endl;
+    }
+    //trace[0] = 0 0_3 1 1_7 2 2_0 1 1_1 3 pass
+    cout<<ruleChecker01(traceSet[0],result[0])<<endl;
+    result[5][1]->name="0";
+    result[5][2]->name="0_3";
+    result[5][3]->name="2";
+    result[5][4]->name="2_0";
+    result[5][5]->name="3";
+    cout<<ruleChecker03(traceSet[0],result[5])<<endl;
+    result[0][1]->name="2";
+    result[0][2]->name="2_0";
+    result[0][3]->name="1";  
+    cout<<ruleChecker04(traceSet[0],result[0])<<endl;
+    result[0][1]->name="1";
+    result[0][2]->name="1_1";
+    result[0][3]->name="3";  
+    cout<<ruleChecker05(traceSet[0],result[0])<<endl;
     return 0;
 }

@@ -13,8 +13,8 @@ class RuleNode{
 	public:
 	string name;
 	vector<RuleNode*> children;
-    RuleNode* mappedTo;
-    bool labeled;
+            RuleNode* mappedTo;
+            bool labeled;
 };
 
 class Label{
