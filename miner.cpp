@@ -724,7 +724,7 @@ bool ruleChecker04(vector<AndroidEvent*> trace, vector<RuleNode*>rule){
         }
     }
     if(pos == -1){
-        pos = trace.size();
+        false;
     }
     for(i=0;i<pos;i++){
         if(trace[i]->name.compare(rule[3]->name)==0){
@@ -911,7 +911,12 @@ int main(int argc,char** argv){
         cout<<endl;
     }
     //trace[0] = 0 0_3 1 1_7 2 2_0 1 1_1 3 pass
-    cout<<ruleChecker01(traceSet[0],result[0])<<endl;
+    result[5][1]->name="0";
+    result[5][2]->name="0_3";
+    result[5][3]->name="1";
+    result[5][4]->name="1_7";
+    result[5][5]->name="2";
+    cout<<ruleChecker01(traceSet[0],result[5])<<endl;
     result[5][1]->name="0";
     result[5][2]->name="0_3";
     result[5][3]->name="2";
@@ -920,7 +925,7 @@ int main(int argc,char** argv){
     cout<<ruleChecker03(traceSet[0],result[5])<<endl;
     result[0][1]->name="2";
     result[0][2]->name="2_0";
-    result[0][3]->name="1";  
+    result[0][3]->name="1";
     cout<<ruleChecker04(traceSet[0],result[0])<<endl;
     result[0][1]->name="1";
     result[0][2]->name="1_1";
