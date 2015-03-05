@@ -1,21 +1,107 @@
-#include<vector>
-#include<iostream>
-#include<fstream>
-#include<vector>
-#include<map>
-#include<string>
-#include<sstream>
+#include <vector>
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <map>
+#include <string>
+#include <sstream>
+#include <algorithm>
+#include <stdlib.h>
 using namespace::std;
 #include "miner.h"
 
+int populationSize = 100;
 vector<vector<AndroidEvent*> > traceSet;
 map<string,int> allStateEvents;
 map<string,int> allViewEvents;
 double confidenceThreshold=0.9;
 double supportThreshold=0.9;
+vector<bool> passTable;
 
 
+bool weightcmp(const Weight* w1, const Weight* w2){
+    return (w1->score < w2->score);
+}
 
+void selection(vector<Weight*> &weights){
+    int i,j;
+    sort(weights.begin(), weights.end(), weightcmp);
+    int removeSize = weights.size()*0.3;
+    for(i=0;i<removeSize;i++){
+        delete weights[i];
+    }
+    weights.erase(weights.begin(),weights.begin()+removeSize);
+}
+
+void crossover(vector<Weight*> &weights){
+    int i,j;
+    while(true){
+        Weight* p1;
+        Weight* p2;
+        p1 = weights[rand()%weights.size()];
+        p2 = weights[rand()%weights.size()];
+        int cutpoint=rand()%(p1->weight.size());
+        Weight* c1=new Weight;
+        Weight* c2=new Weight;
+        for(j=0;j<p1->weight.size();j++){
+            if(j<cutpoint){
+                c1->weight.push_back(p1->weight[j]);
+                c2->weight.push_back(p2->weight[j]);
+            }
+            else{
+                c1->weight.push_back(p2->weight[j]);
+                c2->weight.push_back(p1->weight[j]);
+            }
+            c1->threshold = p1->threshold;
+            c2->threshold = p2->threshold;           
+        }
+        if(weights.size() == populationSize - 1){
+            weights.push_back(c1);
+            break;
+        }
+        else if(weights.size() == populationSize - 2){
+            weights.push_back(c1);
+            weights.push_back(c2);
+            break;
+        }
+        else{
+            weights.push_back(c1);
+            weights.push_back(c2);
+        }
+    }
+}
+
+
+void printWeights(vector<Weight*> &weights){
+    int i,j;
+    for(i=0;i<weights.size();i++){
+        for(j=0;j<weights[i]->weight.size();j++){
+            cout<<weights[i]->weight[j]<<" ";
+        }
+        cout<<"|"<<weights[i]->threshold;
+        cout<<"|"<<weights[i]->score<<endl;
+    }
+}
+
+
+void calculateScore(Weight* w,vector<vector<bool> > tableSat){
+    int i,j;
+    int sum;
+    int score;
+    score = 0;
+    for(i=0;i<tableSat.size();i++){
+        sum = 0;
+        for(j=0;j<tableSat[i].size();j++){
+            if(tableSat[i][j] == true){
+                sum = sum + w->weight[j];
+            }
+        }
+        if(sum > w->threshold){
+            score++;
+        }
+    }
+    w->score = score;
+}
 
 void labelTree(RuleNode* posRule){
     int i,j;
@@ -30,7 +116,6 @@ void labelTree(RuleNode* posRule){
         }
     }
 }
-
 
 bool checkRemovable(RuleNode* negRule){
     cout<<"checking "<<negRule->name<<endl;
@@ -626,6 +711,12 @@ void readInTraceSet(char* inFilename){
             infile >> tempStr;
         }
         traceSet.push_back(newTrace);
+        if (tempStr == "pass"){
+            passTable.push_back(true);
+        }
+        else{
+            passTable.push_back(false);
+        }
         infile >> tempStr;
     }
     infile.close();
@@ -911,6 +1002,7 @@ int main(int argc,char** argv){
         cout<<endl;
     }
     //trace[0] = 0 0_3 1 1_7 2 2_0 1 1_1 3 pass
+    /*
     result[5][1]->name="0";
     result[5][2]->name="0_3";
     result[5][3]->name="1";
@@ -931,5 +1023,44 @@ int main(int argc,char** argv){
     result[0][2]->name="1_1";
     result[0][3]->name="3";  
     cout<<ruleChecker05(traceSet[0],result[0])<<endl;
+    */
+
+    vector<vector<bool> > tableSat;
+    for(i=0;i<traceSet.size();i++){
+        vector<bool> row;
+        for(j=0;j<result.size();j++){
+            row.push_back(ruleChecker01(traceSet[i],result[j]));
+        }
+        tableSat.push_back(row);
+    }
+    for(i=0;i<traceSet.size();i++){
+        for(j=0;j<result.size();j++){
+            cout<<tableSat[i][j]<<" ";
+        }
+        cout<<endl;
+    }    
+    vector<Weight*> weights;
+    for(i=0;i<populationSize;i++){
+        Weight* w = new Weight;
+        for(j=0;j<result.size();j++){
+            w->weight.push_back(rand()%10);
+        }
+        w->threshold = rand()%(10*result.size());
+        calculateScore(w,tableSat);
+        weights.push_back(w);
+    }
+    printWeights(weights);
+
+
+
+    for(i=0;i<100;i++){
+        cout<<"***************************************************************"<<endl;
+        selection(weights);
+        crossover(weights);
+        printWeights(weights);
+    }
+    
+
+
     return 0;
 }
